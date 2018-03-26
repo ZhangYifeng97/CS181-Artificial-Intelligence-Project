@@ -367,7 +367,7 @@ def betterEvaluationFunction(currentGameState):
 
     for ghost in ghostStates:
         if ghost.scaredTimer == 0:
-            score -= 10*manhattanDistance(position, ghost.getPosition())
+            score -= 12*manhattanDistance(position, ghost.getPosition())
         else:
             score += manhattanDistance(position, ghost.getPosition())
 
