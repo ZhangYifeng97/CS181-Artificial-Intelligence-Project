@@ -356,20 +356,27 @@ def betterEvaluationFunction(currentGameState):
     score -= 2*closestFood
 
 
-    capsules = currentGameState.getCapsules()
-    numOfCapsule = len(capsules)
-    score -= 2*numOfCapsule
-
     ghostStates = currentGameState.getGhostStates()
-
 
     ghostPositions = currentGameState.getGhostPositions()
 
+    scaredGhost = 0
+
     for ghost in ghostStates:
+        # Ghost is active
         if ghost.scaredTimer == 0:
             score -= 12*manhattanDistance(position, ghost.getPosition())
+        # Ghost is scared
         else:
             score += manhattanDistance(position, ghost.getPosition())
+            scaredGhost = 1
+
+    if not scaredGhost:
+        capsules = currentGameState.getCapsules()
+        closestCapsule = min([manhattanDistance(position, capsule) for capsule in capsules]) if capsules else 0
+        numOfCapsule = len(capsules)
+        score -= .5*(numOfCapsule + closestCapsule)
+
 
     return score
 
@@ -378,8 +385,6 @@ def betterEvaluationFunction(currentGameState):
 
 
 
-
-    return
 
 # Abbreviation
 better = betterEvaluationFunction
