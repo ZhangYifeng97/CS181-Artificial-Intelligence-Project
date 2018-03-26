@@ -342,14 +342,41 @@ def betterEvaluationFunction(currentGameState):
       DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
-    successorGameState = currentGameState
-    newPos = successorGameState.getPacmanPosition()
-    newFood = successorGameState.getFood()
-    newGhostStates = successorGameState.getGhostStates()
-    newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
+    currentScore = currentGameState.getScore()
+    
+    position = currentGameState.getPacmanPosition()
+
+    numOfFood = currentGameState.getNumFood()
+
+    capsules = currentGameState.getCapsules()
+    numOfCapsule = len(capsules)
+
+    ghostStates = currentGameState.getGhostStates()
 
 
-    return successorGameState.getScore()
+    ghostPositions = currentGameState.getGhostPositions()
+
+    realGhosts = []
+    fakeGhosts = []
+
+    for ghost in ghostStates:
+        if ghost.scaredTimer == 0:
+            realGhosts.append(ghost.getPosition())
+        else:
+            fakeGhosts.append(ghost.getPosition())
+
+    closestRealGhost = min([manhattanDistance(position, ghost) for ghost in realGhosts]) if realGhosts else 0
+    closestFakeGhost = min([manhattanDistance(position, ghost) for ghost in fakeGhosts]) if fakeGhosts else 0
+
+    closestCapsule = min([manhattanDistance(position, capsule) for capsule in capsules]) if capsules else 0
+
+
+
+
+
+
+
+    return currentScore -closestCapsule - numOfCapsule + closestRealGhost -closestFakeGhost - numOfFood
 
 # Abbreviation
 better = betterEvaluationFunction
