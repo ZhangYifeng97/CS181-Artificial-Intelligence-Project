@@ -375,7 +375,7 @@ def betterEvaluationFunction(currentGameState):
         capsules = currentGameState.getCapsules()
         closestCapsule = min([manhattanDistance(position, capsule) for capsule in capsules]) if capsules else 0
         numOfCapsule = len(capsules)
-        score -= .5*(numOfCapsule + closestCapsule)
+        score -= .65*(numOfCapsule + closestCapsule)
 
 
     return score
