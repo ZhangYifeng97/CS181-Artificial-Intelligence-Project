@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -48,7 +48,7 @@ class PlanningProblem:
         Only used in problems that use ghosts (FoodGhostPlanningProblem)
         """
         util.raiseNotDefined()
-        
+
     def getGoalState(self):
         """
         Returns goal state for problem. Note only defined for problems that have
@@ -68,39 +68,80 @@ def tinyMazePlan(problem):
 
 def sentence1():
     """Returns a logic.Expr instance that encodes that the following expressions are all true.
-    
+
     A or B
     (not A) if and only if ((not B) or C)
     (not A) or (not B) or C
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    A = logic.Expr("A")
+    B = logic.Expr("B")
+    C = logic.Expr("C")
+    first = ( A | B )
+    second = ( ~A ) % ( ~B | C )
+    third = logic.disjoin(~A, ~B, C)
+    return logic.conjoin(first, second, third)
 
 def sentence2():
     """Returns a logic.Expr instance that encodes that the following expressions are all true.
-    
+
     C if and only if (B or D)
     A implies ((not B) and (not D))
     (not (B and (not C))) implies A
     (not D) implies C
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    A = logic.Expr("A")
+    B = logic.Expr("B")
+    C = logic.Expr("C")
+    D = logic.Expr("D")
+    first = C % ( B | D )
+    second = A >> ( ~B & ~D )
+    third = ~( B & ~C ) >> A
+    fourth = ~D >> C
+    return logic.conjoin(first, second, third, fourth)
 
 def sentence3():
     """Using the symbols WumpusAlive[1], WumpusAlive[0], WumpusBorn[0], and WumpusKilled[0],
     created using the logic.PropSymbolExpr constructor, return a logic.PropSymbolExpr
     instance that encodes the following English sentences (in this order):
 
-    The Wumpus is alive at time 1 if and only if the Wumpus was alive at time 0 and it was
-    not killed at time 0 or it was not alive and time 0 and it was born at time 0.
+    (The Wumpus is alive at time 1)
+
+    if and only if
+
+    (
+    (the Wumpus was alive at time 0)
+    and
+    (it was not killed at time 0)
+    )
+
+    or
+
+    (
+    (it was not alive at time 0)
+    and
+    (it was born at time 0)
+    ).
 
     The Wumpus cannot both be alive at time 0 and be born at time 0.
 
     The Wumpus is born at time 0.
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    A = logic.PropSymbolExpr("WumpusAlive[1]")
+    B = logic.PropSymbolExpr("WumpusAlive[0]")
+    C = logic.PropSymbolExpr("WumpusKilled[0]")
+    D = logic.PropSymbolExpr("WumpusBorn[0]")
+
+    first = ( A ) % ( ((B & ~C) | (~B & D)) )
+
+    second = ~( B & D )
+
+    third = D
+
+
+    return logic.conjoin(first, second, third)
 
 def findModel(sentence):
     """Given a propositional logic sentence (i.e. a logic.Expr instance), returns a satisfying
@@ -111,8 +152,8 @@ def findModel(sentence):
 
 def atLeastOne(literals) :
     """
-    Given a list of logic.Expr literals (i.e. in the form A or ~A), return a single 
-    logic.Expr instance in CNF (conjunctive normal form) that represents the logic 
+    Given a list of logic.Expr literals (i.e. in the form A or ~A), return a single
+    logic.Expr instance in CNF (conjunctive normal form) that represents the logic
     that at least one of the literals in the list is true.
     >>> A = logic.PropSymbolExpr('A');
     >>> B = logic.PropSymbolExpr('B');
@@ -134,8 +175,8 @@ def atLeastOne(literals) :
 
 def atMostOne(literals) :
     """
-    Given a list of logic.Expr literals, return a single logic.Expr instance in 
-    CNF (conjunctive normal form) that represents the logic that at most one of 
+    Given a list of logic.Expr literals, return a single logic.Expr instance in
+    CNF (conjunctive normal form) that represents the logic that at most one of
     the expressions in the list is true.
     """
     "*** YOUR CODE HERE ***"
@@ -144,8 +185,8 @@ def atMostOne(literals) :
 
 def exactlyOne(literals) :
     """
-    Given a list of logic.Expr literals, return a single logic.Expr instance in 
-    CNF (conjunctive normal form)that represents the logic that exactly one of 
+    Given a list of logic.Expr literals, return a single logic.Expr instance in
+    CNF (conjunctive normal form)that represents the logic that exactly one of
     the expressions in the list is true.
     """
     "*** YOUR CODE HERE ***"
@@ -170,7 +211,7 @@ def extractActionSequence(model, actions):
 
 def pacmanSuccessorStateAxioms(x, y, t, walls_grid):
     """
-    Successor state axiom for state (x,y,t) (from t-1), given the board (as a 
+    Successor state axiom for state (x,y,t) (from t-1), given the board (as a
     grid representing the wall locations).
     Current <==> (previous position at time t-1) & (took action to move to x, y)
     """
@@ -186,7 +227,7 @@ def positionLogicPlan(problem):
     """
     walls = problem.walls
     width, height = problem.getWidth(), problem.getHeight()
-    
+
     "*** YOUR CODE HERE ***"
     util.raiseNotDefined()
 
@@ -211,4 +252,3 @@ flp = foodLogicPlan
 
 # Some for the logic module uses pretty deep recursion on long expressions
 sys.setrecursionlimit(100000)
-    
