@@ -339,7 +339,25 @@ def betterEvaluationFunction(currentGameState):
       Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
       evaluation function (question 4).
 
-      DESCRIPTION: <write something here so we know what you did>
+      DESCRIPTION:
+
+        For all the parts of the score:
+            if negative, then the smaller the part is, the better
+            if positive, then the larger the part is, the better
+
+        Smaller-better parts:
+            Number of left foods
+            Distance to closest food
+            Distance to closest real ghost
+
+        Larger-better parts:
+            Distance to closest fake ghost
+
+
+
+
+
+
     """
     "*** YOUR CODE HERE ***"
     score = currentGameState.getScore()
@@ -360,7 +378,8 @@ def betterEvaluationFunction(currentGameState):
 
     ghostPositions = currentGameState.getGhostPositions()
 
-    scaredGhost = 0
+    # Bool
+    scaredGhost = False
 
     for ghost in ghostStates:
         # Ghost is active
@@ -369,7 +388,7 @@ def betterEvaluationFunction(currentGameState):
         # Ghost is scared
         else:
             score += manhattanDistance(position, ghost.getPosition())
-            scaredGhost = 1
+            scaredGhost = True
 
     if not scaredGhost:
         capsules = currentGameState.getCapsules()
