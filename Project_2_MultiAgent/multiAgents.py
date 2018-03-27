@@ -144,7 +144,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
         legalActions = currentState.getLegalActions(self.index)
         valuesForLegalActions = [self.value(currentState.generateSuccessor(0, action), 1, 0) for action in legalActions]
 
-        # Return the action with the largest value
+        # Return the action with the largest value, since Pacman is a max agent
         maxValue = max(valuesForLegalActions)
         bestIndex = valuesForLegalActions.index(maxValue)
         return legalActions[bestIndex]
@@ -222,7 +222,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                 break
             alpha = max(alpha, v)
 
-        # Return the action with the largest value
+        # Return the action with the largest value, since Pacman is a max agent
         maxValue = max(valuesForLegalActions)
         bestIndex = valuesForLegalActions.index(maxValue)
         return legalActions[bestIndex]
@@ -293,7 +293,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             v = self.value(currentState.generateSuccessor(self.index, action), nextAgent, 0)
             valuesForLegalActions.append(v)
 
-        # Return the action with the largest value
+        # Return the action with the largest value, since Pacman is a max agent
         maxValue = max(valuesForLegalActions)
         bestIndex = valuesForLegalActions.index(maxValue)
         return legalActions[bestIndex]
@@ -360,18 +360,22 @@ def betterEvaluationFunction(currentGameState):
 
     """
     "*** YOUR CODE HERE ***"
+
     score = currentGameState.getScore()
 
     position = currentGameState.getPacmanPosition()
 
     foods = currentGameState.getFood()
 
+    # The less food left, the better.
 
-    numOfFoods = currentGameState.getNumFood()
-    score -= 5*numOfFoods
-
+    # So motivate Pacman to find food
     closestFood = min([manhattanDistance(position, food) for food in foods]) if foods else 0
     score -= 2*closestFood
+
+    # And eat them
+    numOfFoods = currentGameState.getNumFood()
+    score -= 5*numOfFoods
 
 
     ghostStates = currentGameState.getGhostStates()
@@ -382,14 +386,15 @@ def betterEvaluationFunction(currentGameState):
     scaredGhost = False
 
     for ghost in ghostStates:
-        # Ghost is active
+        # Ghost is active, motivate Pacman to run away from it
         if ghost.scaredTimer == 0:
             score -= 12*manhattanDistance(position, ghost.getPosition())
-        # Ghost is scared
+        # Ghost is scared, go get 'em!
         else:
             score += manhattanDistance(position, ghost.getPosition())
             scaredGhost = True
 
+    # If there is no scare ghost, motivate Pacman to go for capsules
     if not scaredGhost:
         capsules = currentGameState.getCapsules()
         closestCapsule = min([manhattanDistance(position, capsule) for capsule in capsules]) if capsules else 0
