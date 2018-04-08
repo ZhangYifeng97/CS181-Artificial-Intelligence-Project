@@ -77,8 +77,9 @@ def sentence1():
     A = logic.Expr("A")
     B = logic.Expr("B")
     C = logic.Expr("C")
-    first = ( A | B )
-    second = ( ~A ) % ( ~B | C )
+    first = logic.disjoin(A, B)
+
+    second = ( ~A ) % logic.disjoin(~B, C)
     third = logic.disjoin(~A, ~B, C)
     return logic.conjoin(first, second, third)
 
@@ -95,9 +96,9 @@ def sentence2():
     B = logic.Expr("B")
     C = logic.Expr("C")
     D = logic.Expr("D")
-    first = C % ( B | D )
-    second = A >> ( ~B & ~D )
-    third = ~( B & ~C ) >> A
+    first = C % logic.disjoin(B, D)
+    second = A >> logic.conjoin(~B, ~D)
+    third = ~logic.conjoin(B, ~C) >> A
     fourth = ~D >> C
     return logic.conjoin(first, second, third, fourth)
 
@@ -134,9 +135,9 @@ def sentence3():
     C = logic.PropSymbolExpr("WumpusKilled[0]")
     D = logic.PropSymbolExpr("WumpusBorn[0]")
 
-    first = ( A ) % ( ((B & ~C) | (~B & D)) )
+    first = ( A ) % (logic.disjoin(logic.conjoin(B, ~C), logic.conjoin(~B, D)) )
 
-    second = ~( B & D )
+    second = ~logic.conjoin(B, D)
 
     third = D
 
@@ -148,7 +149,9 @@ def findModel(sentence):
     model if one exists. Otherwise, returns False.
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    cnf = logic.to_cnf(sentence)
+    model = logic.pycoSAT(cnf)
+    return model
 
 def atLeastOne(literals) :
     """
@@ -170,7 +173,7 @@ def atLeastOne(literals) :
     True
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return logic.disjoin(i for i in literals)
 
 
 def atMostOne(literals) :
