@@ -183,7 +183,15 @@ def atMostOne(literals) :
     the expressions in the list is true.
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    conjoinList = []
+    for i in literals:
+        for j in [l for l in literals if l != i]:
+            # Appended pair is true iff i and j are both true
+            conjoinList.append(logic.disjoin(~i, ~j))
+    # In any pair of the literals, two cannot be both true
+    return logic.conjoin(conjoinList)
+
 
 
 def exactlyOne(literals) :
@@ -193,8 +201,8 @@ def exactlyOne(literals) :
     the expressions in the list is true.
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
 
+    return logic.conjoin(atLeastOne(literals), atMostOne(literals))
 
 def extractActionSequence(model, actions):
     """
@@ -209,7 +217,15 @@ def extractActionSequence(model, actions):
     ['West', 'South', 'North']
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    messyList = []
+    for key in model:
+        if model[key] is True:
+             parsed = logic.PropSymbolExpr.parseExpr(key)
+             if parsed[0] in actions:
+                 messyList.append((parsed[0], int(parsed[1])))
+    orderedList = sorted(messyList, key=lambda x: x[1])
+
+    return [x[0] for x in orderedList]
 
 
 def pacmanSuccessorStateAxioms(x, y, t, walls_grid):
@@ -219,7 +235,24 @@ def pacmanSuccessorStateAxioms(x, y, t, walls_grid):
     Current <==> (previous position at time t-1) & (took action to move to x, y)
     """
     "*** YOUR CODE HERE ***"
-    return logic.Expr('A') # Replace this with your expression
+
+    def noWallHere(coord):
+        return not walls_grid[coord[0]][coord[1]]
+
+    listPrev = []
+    directions = ["East", "West", "South", "North"]
+    at = [(x-1, y), (x+1, y), (x, y+1), (x, y-1)]
+    for i in range(len(directions)):
+        direc = directions[i]
+        coord = at[i]
+        if noWallHere(coord):
+            prevAtHere = logic.PropSymbolExpr(pacman_str, coord[0], coord[1], t-1)
+            prevGoThere = logic.PropSymbolExpr(direc, t-1)
+            listPrev.append(logic.conjoin(prevAtHere, prevGoThere))
+
+    pacmanNow = logic.PropSymbolExpr(pacman_str, x, y, t)
+
+    return pacmanNow % logic.disjoin(i for i in listPrev)
 
 
 def positionLogicPlan(problem):
