@@ -153,6 +153,8 @@ def findModel(sentence):
     model = logic.pycoSAT(cnf)
     return model
 
+
+
 def atLeastOne(literals) :
     """
     Given a list of logic.Expr literals (i.e. in the form A or ~A), return a single
@@ -201,7 +203,6 @@ def exactlyOne(literals) :
     the expressions in the list is true.
     """
     "*** YOUR CODE HERE ***"
-
     return logic.conjoin(atLeastOne(literals), atMostOne(literals))
 
 def extractActionSequence(model, actions):
@@ -219,13 +220,18 @@ def extractActionSequence(model, actions):
     "*** YOUR CODE HERE ***"
     messyList = []
     for key in model:
+        # Add all the true action keys in model
         if model[key] is True:
              parsed = logic.PropSymbolExpr.parseExpr(key)
              if parsed[0] in actions:
                  messyList.append((parsed[0], int(parsed[1])))
+    # And sort them basing on the time
     orderedList = sorted(messyList, key=lambda x: x[1])
 
     return [x[0] for x in orderedList]
+
+
+
 
 
 def pacmanSuccessorStateAxioms(x, y, t, walls_grid):
@@ -236,13 +242,14 @@ def pacmanSuccessorStateAxioms(x, y, t, walls_grid):
     """
     "*** YOUR CODE HERE ***"
 
+
     def noWallHere(coord):
         return not walls_grid[coord[0]][coord[1]]
 
     listPrev = []
     directions = ["East", "West", "South", "North"]
     at = [(x-1, y), (x+1, y), (x, y+1), (x, y-1)]
-    for i in range(len(directions)):
+    for i in xrange(len(directions)):
         direc = directions[i]
         coord = at[i]
         if noWallHere(coord):
@@ -265,7 +272,61 @@ def positionLogicPlan(problem):
     width, height = problem.getWidth(), problem.getHeight()
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    start = problem.getStartState()
+    goal = problem.getGoalState()
+    actions = [game.Directions.EAST, game.Directions.WEST, game.Directions.NORTH, game.Directions.SOUTH]
+
+    # Start position expr
+    KB = logic.PropSymbolExpr(pacman_str, start[0], start[1], 1)
+
+    t = 1
+
+    # Must be at start position when game starts
+    for x in xrange(1, width + 1):
+        for y in xrange(1, height + 1):
+            if not walls[x][y] and (x, y) != start:
+                notStartHere = ~logic.PropSymbolExpr(pacman_str, x, y, 1)
+                KB = logic.conjoin(KB, notStartHere)
+
+    while t <= 50:
+
+        # One and only one action at one time
+        currentActions = [logic.PropSymbolExpr(action, t) for action in actions]
+        onlyAction = exactlyOne(currentActions)
+        KB = logic.conjoin(KB, onlyAction)
+
+        # For all the positions on the map
+        for x in xrange(1, width + 1):
+            for y in xrange(1, height + 1):
+
+                # If no wall there
+                if not walls[x][y]:
+
+                    # Expr for pacman to be at this position at t+1
+                    nextToGo = pacmanSuccessorStateAxioms(x, y, t + 1, walls)
+                    KB = logic.conjoin(KB, nextToGo)
+
+        # Expr for pacman to be at goal position at t+1
+        goalProp = logic.PropSymbolExpr(pacman_str, goal[0], goal[1], t + 1)
+
+        # The model to be solved
+        modelToFind = logic.conjoin(KB, goalProp)
+
+        solution = False
+
+        solution = findModel(modelToFind)
+
+        # Extract the sequence only when the solution is found
+        if solution:
+            return extractActionSequence(solution, actions)
+
+        t += 1
+
+    print "Error in positionLogicPlan"
+
+
+
 
 
 def foodLogicPlan(problem):
@@ -279,7 +340,75 @@ def foodLogicPlan(problem):
     width, height = problem.getWidth(), problem.getHeight()
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    start, food = problem.getStartState()
+    actions = [game.Directions.EAST, game.Directions.WEST, game.Directions.NORTH, game.Directions.SOUTH]
+
+
+    # Start position expr
+    pathKB = logic.PropSymbolExpr(pacman_str, start[0], start[1], 1)
+
+
+
+
+    t = 1
+
+    # Must be at start position when game starts
+    for x in xrange(1, width + 1):
+        for y in xrange(1, height + 1):
+            if not walls[x][y] and (x, y) != start:
+                notStartHere = ~logic.PropSymbolExpr(pacman_str, x, y, 1)
+                pathKB = logic.conjoin(pathKB, notStartHere)
+
+    while t <= 50:
+
+        # One and only one action at one time
+        currentActions = [logic.PropSymbolExpr(action, t) for action in actions]
+        onlyAction = exactlyOne(currentActions)
+        pathKB = logic.conjoin(pathKB, onlyAction)
+
+        # For each step, foodKB does not necessarily base on the previous one
+        foodKB = []
+        eachFood = []
+
+        # For all the positions on the map
+        for x in xrange(1, width + 1):
+            for y in xrange(1, height + 1):
+
+                # If no wall there
+                if not walls[x][y]:
+
+                    # Expr for pacman to be at this position at t+1
+                    nextToGo = pacmanSuccessorStateAxioms(x, y, t + 1, walls)
+                    pathKB = logic.conjoin(pathKB, nextToGo)
+
+                # If food there, then it must be reached at least once
+                if food[x][y]:
+
+                    # Each food should be visited at least once in the past time
+                    for timePassed in xrange(1, t+1):
+                        oneFood = logic.PropSymbolExpr(pacman_str, x, y, timePassed)
+                        eachFood.append(oneFood)
+
+                    eachFoodVisited = atLeastOne(eachFood)
+
+                    foodKB.append(eachFoodVisited)
+
+                    # Flush the foods
+                    eachFood = []
+
+        foodKB = logic.conjoin(foodKB)
+        combKB = logic.conjoin(foodKB, pathKB)
+
+        solution = False
+        solution = findModel(combKB)
+
+        # Extract the sequence only when the solution is found
+        if solution:
+            return extractActionSequence(solution, actions)
+
+        t += 1
+
 
 
 # Abbreviations
