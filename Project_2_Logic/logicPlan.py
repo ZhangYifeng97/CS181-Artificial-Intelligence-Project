@@ -277,6 +277,8 @@ def positionLogicPlan(problem):
     goal = problem.getGoalState()
     actions = [game.Directions.EAST, game.Directions.WEST, game.Directions.NORTH, game.Directions.SOUTH]
 
+
+
     # Start position expr
     KB = logic.PropSymbolExpr(pacman_str, start[0], start[1], 1)
 
@@ -296,6 +298,8 @@ def positionLogicPlan(problem):
         onlyAction = exactlyOne(currentActions)
         KB = logic.conjoin(KB, onlyAction)
 
+
+
         # For all the positions on the map
         for x in xrange(1, width + 1):
             for y in xrange(1, height + 1):
@@ -314,7 +318,6 @@ def positionLogicPlan(problem):
         modelToFind = logic.conjoin(KB, goalProp)
 
         solution = False
-
         solution = findModel(modelToFind)
 
         # Extract the sequence only when the solution is found
@@ -349,8 +352,6 @@ def foodLogicPlan(problem):
     pathKB = logic.PropSymbolExpr(pacman_str, start[0], start[1], 1)
 
 
-
-
     t = 1
 
     # Must be at start position when game starts
@@ -362,30 +363,39 @@ def foodLogicPlan(problem):
 
     while t <= 50:
 
+        # For each step, foodKB does not necessarily base on the previous one
+        foodKB = []
+        eachFood = []
+
         # One and only one action at one time
         currentActions = [logic.PropSymbolExpr(action, t) for action in actions]
         onlyAction = exactlyOne(currentActions)
         pathKB = logic.conjoin(pathKB, onlyAction)
 
-        # For each step, foodKB does not necessarily base on the previous one
-        foodKB = []
-        eachFood = []
 
-        # For all the positions on the map
+        # All the moves should be legal
         for x in xrange(1, width + 1):
             for y in xrange(1, height + 1):
-
-                # If no wall there
                 if not walls[x][y]:
-
-                    # Expr for pacman to be at this position at t+1
                     nextToGo = pacmanSuccessorStateAxioms(x, y, t + 1, walls)
                     pathKB = logic.conjoin(pathKB, nextToGo)
 
-                # If food there, then it must be reached at least once
-                if food[x][y]:
 
-                    # Each food should be visited at least once in the past time
+
+        # onlyOnePos = []
+        #
+        # for x in xrange(1, width + 1):
+        #     for y in xrange(1, height + 1):
+        #         if not walls[x][y]:
+        #             onlyOne = logic.PropSymbolExpr(pacman_str, x, y, t)
+        #             onlyOnePos.append(onlyOne)
+        #
+        # KB = logic.conjoin(onlyOnePos)
+
+        # Each food should be visited at least once in the past time
+        for x in xrange(1, width + 1):
+            for y in xrange(1, height + 1):
+                if food[x][y]:
                     for timePassed in xrange(1, t+1):
                         oneFood = logic.PropSymbolExpr(pacman_str, x, y, timePassed)
                         eachFood.append(oneFood)
@@ -394,16 +404,18 @@ def foodLogicPlan(problem):
 
                     foodKB.append(eachFoodVisited)
 
-                    # Flush the foods
+                    # Flush the foods, because the next one would be different
                     eachFood = []
 
         foodKB = logic.conjoin(foodKB)
         combKB = logic.conjoin(foodKB, pathKB)
 
         solution = False
+
+
         solution = findModel(combKB)
 
-        # Extract the sequence only when the solution is found
+
         if solution:
             return extractActionSequence(solution, actions)
 
