@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -75,7 +75,7 @@ def constructBayesNet(gameState):
     - a large number of "observation" variables for each cell Pacman can measure
 
     You *must* name all position and house variables using the constants
-    (X_POS_VAR, FOOD_HOUSE_VAR, etc.) at the top of this file. 
+    (X_POS_VAR, FOOD_HOUSE_VAR, etc.) at the top of this file.
 
     The full set of observation variables can be obtained as follows:
 
@@ -96,7 +96,24 @@ def constructBayesNet(gameState):
     variableDomainsDict = {}
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    edges.append((X_POS_VAR, GHOST_HOUSE_VAR))
+    edges.append((X_POS_VAR, FOOD_HOUSE_VAR))
+    edges.append((Y_POS_VAR, FOOD_HOUSE_VAR))
+    edges.append((Y_POS_VAR, GHOST_HOUSE_VAR))
+
+    for housePos in gameState.getPossibleHouses():
+        for obsPos in gameState.getHouseWalls(housePos):
+            obsVar = OBS_VAR_TEMPLATE % obsPos
+            obsVars.append(obsVar)
+            edges.append((FOOD_HOUSE_VAR, obsVar))
+            edges.append((GHOST_HOUSE_VAR, obsVar))
+            variableDomainsDict[obsVar] = OBS_VALS
+
+    variableDomainsDict[X_POS_VAR] = X_POS_VALS
+    variableDomainsDict[Y_POS_VAR] = Y_POS_VALS
+    variableDomainsDict[FOOD_HOUSE_VAR] = HOUSE_VALS
+    variableDomainsDict[GHOST_HOUSE_VAR] = HOUSE_VALS
 
     variables = [X_POS_VAR, Y_POS_VAR] + HOUSE_VARS + obsVars
     net = bn.constructEmptyBayesNet(variables, edges, variableDomainsDict)
@@ -109,7 +126,7 @@ def fillCPTs(bayesNet, gameState):
     fillObsCPT(bayesNet, gameState)
 
 def fillXCPT(bayesNet, gameState):
-    from layout import PROB_FOOD_LEFT 
+    from layout import PROB_FOOD_LEFT
     xFactor = bn.Factor([X_POS_VAR], [], bayesNet.variableDomainsDict())
     xFactor.setProbability({X_POS_VAR: FOOD_LEFT_VAL}, PROB_FOOD_LEFT)
     xFactor.setProbability({X_POS_VAR: GHOST_LEFT_VAL}, 1 - PROB_FOOD_LEFT)
@@ -127,7 +144,13 @@ def fillYCPT(bayesNet, gameState):
 
     yFactor = bn.Factor([Y_POS_VAR], [], bayesNet.variableDomainsDict())
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    # Y position domain: { BOTH_TOP, BOTH_BOTTOM, LEFT_TOP, LEFT_BOTTOM }
+    # Get and set each value's probability
+    yFactor.setProbability({Y_POS_VAR: BOTH_TOP_VAL}, PROB_BOTH_TOP)
+    yFactor.setProbability({Y_POS_VAR: BOTH_BOTTOM_VAL}, PROB_BOTH_BOTTOM)
+    yFactor.setProbability({Y_POS_VAR: LEFT_TOP_VAL}, PROB_ONLY_LEFT_TOP)
+    yFactor.setProbability({Y_POS_VAR: LEFT_BOTTOM_VAL}, PROB_ONLY_LEFT_BOTTOM)
     bayesNet.setCPT(Y_POS_VAR, yFactor)
 
 def fillHouseCPT(bayesNet, gameState):
@@ -192,7 +215,50 @@ def fillObsCPT(bayesNet, gameState):
     bottomLeftPos, topLeftPos, bottomRightPos, topRightPos = gameState.getPossibleHouses()
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    # Dict for all the possible house positions
+    housePoses = {
+                    bottomLeftPos: BOTTOM_LEFT_VAL,
+                    topLeftPos: TOP_LEFT_VAL,
+                    bottomRightPos: BOTTOM_RIGHT_VAL,
+                    topRightPos: TOP_RIGHT_VAL
+                 }
+
+    foodProbDict =  {
+                        RED_OBS_VAL: PROB_FOOD_RED,
+                        BLUE_OBS_VAL: 1 - PROB_FOOD_RED,
+                    }
+
+    ghostProbDict = {
+                        RED_OBS_VAL: PROB_GHOST_RED,
+                        BLUE_OBS_VAL: 1 - PROB_GHOST_RED
+                    }
+
+
+    # Iterate through all house positions
+    for housePos in gameState.getPossibleHouses():
+        posVal = housePoses[housePos]
+        for obsPos in gameState.getHouseWalls(housePos):
+            obsVar = OBS_VAR_TEMPLATE % obsPos
+            obsFactor = bn.Factor([obsVar], [FOOD_HOUSE_VAR, GHOST_HOUSE_VAR], bayesNet.variableDomainsDict())
+            for assignment in obsFactor.getAllPossibleAssignmentDicts():
+                colorOfWall = assignment[obsVar]
+
+                # Probability for the food house
+                if assignment[FOOD_HOUSE_VAR] == posVal:
+                    p = foodProbDict[colorOfWall] if colorOfWall in foodProbDict else 0
+
+                # Probability for the ghost house
+                elif assignment[GHOST_HOUSE_VAR] == posVal:
+                    p = ghostProbDict[colorOfWall] if colorOfWall in ghostProbDict else 0
+
+                # No ghost or food house
+                else:
+                    p = 1 if assignment[obsVar] == NO_OBS_VAL else 0
+
+                obsFactor.setProbability(assignment, p)
+
+            bayesNet.setCPT(obsVar, obsFactor)
 
 def getMostLikelyFoodHousePosition(evidence, bayesNet, eliminationOrder):
     """
@@ -207,8 +273,8 @@ def getMostLikelyFoodHousePosition(evidence, bayesNet, eliminationOrder):
     (This should be a very short method.)
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
-
+    factor = inference.inferenceByVariableElimination(bayesNet, HOUSE_VARS, evidence, eliminationOrder)
+    return max(factor.getAllPossibleAssignmentDicts(), key = lambda x: factor.getProbability(x))
 
 class BayesAgent(game.Agent):
 
@@ -254,7 +320,7 @@ class BayesAgent(game.Agent):
         evidence = self.getEvidence(gameState)
         unknownVars = [o for o in self.obsVars if o not in evidence]
         eliminationOrder = unknownVars + [X_POS_VAR, Y_POS_VAR, GHOST_HOUSE_VAR]
-        bestFoodAssignment = getMostLikelyFoodHousePosition(evidence, 
+        bestFoodAssignment = getMostLikelyFoodHousePosition(evidence,
                 self.bayesNet, eliminationOrder)
 
         tx, ty = dict(
@@ -315,7 +381,7 @@ class VPIAgent(BayesAgent):
                 (TOP_RIGHT_VAL, TOP_LEFT_VAL)]:
 
             condEvidence = dict(evidence)
-            condEvidence.update({FOOD_HOUSE_VAR: foodHouseVal, 
+            condEvidence.update({FOOD_HOUSE_VAR: foodHouseVal,
                 GHOST_HOUSE_VAR: ghostHouseVal})
             assignmentProb = houseMarginals.getProbability(condEvidence)
 
@@ -384,7 +450,7 @@ class VPIAgent(BayesAgent):
         actions = gameState.getLegalActions()
         neighbors = [gameState.generatePacmanSuccessor(a) for a in actions]
         neighborStates = [s.getPacmanPosition() for s in neighbors]
-        best = min(zip(actions, neighborStates), 
+        best = min(zip(actions, neighborStates),
                 key=lambda x: self.distances[x[1], dest])
         return best[0]
 
@@ -432,4 +498,3 @@ def combinations(n, r):
     numer = reduce(op.mul, xrange(n, n-r, -1))
     denom = reduce(op.mul, xrange(1, r+1))
     return numer / denom
-
