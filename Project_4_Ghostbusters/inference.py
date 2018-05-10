@@ -390,16 +390,20 @@ class ParticleFilter(InferenceModule):
         jailPos = self.getJailPosition()
         numPar = self.numParticles
 
+        seenParticles = {}
         for particle in self.particles:
-            beliefs[particle] += self.getObservationProb(observation, pacmanPos, particle, jailPos)
+            if particle in seenParticles:
+                p = seenParticles[particle]
+            else:
+                p = self.getObservationProb(observation, pacmanPos, particle, jailPos)
+                seenParticles[particle] = p
+            beliefs[particle] += p
 
         if beliefs.total() == 0:
             # Reinitialize
             self.initializeUniformly(gameState)
 
         else:
-            beliefs.normalize()
-
             # Resample
             self.particles = [beliefs.sample() for i in range(numPar)]
 
@@ -524,16 +528,21 @@ class JointParticleFilter(ParticleFilter):
         numGhosts = self.numGhosts
         numPar = self.numParticles
 
+        seenPairs = {}
         for particle in particles:
             p = 1
             for i in range(numGhosts):
-                p *= self.getObservationProb(observation[i], pacmanPos, particle[i], self.getJailPosition(i))
+                if (particle, i) in seenPairs:
+                    p *= seenPairs[(particle, i)]
+                else:
+                    mul = self.getObservationProb(observation[i], pacmanPos, particle[i], self.getJailPosition(i))
+                    p *= mul
+                    seenPairs[(particle, i)] = mul
             beliefs[particle] += p
 
         if beliefs.total() == 0:
             self.initializeUniformly(gameState)
         else:
-            beliefs.normalize()
             self.particles = [beliefs.sample() for i in range(numPar)]
 
         self.beliefs = beliefs
