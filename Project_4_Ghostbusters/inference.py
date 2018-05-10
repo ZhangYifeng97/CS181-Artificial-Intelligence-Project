@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -75,6 +75,12 @@ class DiscreteDistribution(dict):
         {}
         """
         "*** YOUR CODE HERE ***"
+        # Q0(1)
+        sum = self.total()
+        if sum == 0:
+            return
+        for key in self:
+            self[key] /= sum
 
     def sample(self):
         """
@@ -98,6 +104,15 @@ class DiscreteDistribution(dict):
         0.0
         """
         "*** YOUR CODE HERE ***"
+        # Q0(2)
+        self.normalize()
+        bar = random.random() # [0, 1)
+        sum = 0
+        for key in self:
+            if self[key] + sum >= bar:
+                return key
+            sum += self[key]
+
 
 
 class InferenceModule:
@@ -167,6 +182,18 @@ class InferenceModule:
         Return the probability P(noisyDistance | pacmanPosition, ghostPosition).
         """
         "*** YOUR CODE HERE ***"
+
+        # Q1
+        if ghostPosition == jailPosition:
+            return 1 if noisyDistance is None else 0
+
+        elif noisyDistance is None:
+            return 0
+
+        trueDistance = manhattanDistance(pacmanPosition, ghostPosition)
+
+        # P(noisyDistance | trueDistance)
+        return busters.getObservationProbability(noisyDistance, trueDistance)
 
     def setGhostPosition(self, gameState, ghostPosition, index):
         """
@@ -274,7 +301,17 @@ class ExactInference(InferenceModule):
         position is known.
         """
         "*** YOUR CODE HERE ***"
+
+        # Q2
+        pacmanPos = gameState.getPacmanPosition()
+        jailPos = self.getJailPosition()
+        ghostPoses = self.allPositions
+
+        for ghostPos in ghostPoses:
+            self.beliefs[ghostPos] *= self.getObservationProb(observation, pacmanPos, ghostPos, jailPos)
+
         self.beliefs.normalize()
+
 
     def elapseTime(self, gameState):
         """
@@ -286,6 +323,15 @@ class ExactInference(InferenceModule):
         current position is known.
         """
         "*** YOUR CODE HERE ***"
+        # Q3
+        oldPoses = self.allPositions
+        newBeliefs = DiscreteDistribution()
+        for oldPos in oldPoses:
+            newPosDist = self.getPositionDistribution(gameState, oldPos)
+            for newPos in newPosDist:
+                newBeliefs[newPos] += self.beliefs[oldPos] * newPosDist[newPos]
+        self.beliefs = newBeliefs
+
 
     def getBeliefDistribution(self):
         return self.beliefs
@@ -311,7 +357,12 @@ class ParticleFilter(InferenceModule):
         self.particles for the list of particles.
         """
         self.particles = []
-        "*** YOUR CODE HERE ***"
+        # Q5
+        numPar = self.numParticles
+        legal = self.legalPositions
+        numLegal = len(legal)
+        for i in range(numPar):
+            self.particles.append(legal[i%numLegal])
 
     def observeUpdate(self, observation, gameState):
         """
@@ -327,6 +378,27 @@ class ParticleFilter(InferenceModule):
         """
         "*** YOUR CODE HERE ***"
 
+        # Q6
+        beliefs = DiscreteDistribution()
+        pacmanPos = gameState.getPacmanPosition()
+        jailPos = self.getJailPosition()
+        numPar = self.numParticles
+
+        for particle in self.particles:
+            beliefs[particle] += self.getObservationProb(observation, pacmanPos, particle, jailPos)
+
+        if beliefs.total() == 0:
+            # Reinitialize
+            self.initializeUniformly(gameState)
+
+        else:
+            beliefs.normalize()
+
+            # Resample
+            self.particles = [beliefs.sample() for i in range(numPar)]
+
+        self.beliefs = beliefs
+
     def elapseTime(self, gameState):
         """
         Sample each particle's next state based on its current state and the
@@ -341,6 +413,12 @@ class ParticleFilter(InferenceModule):
         essentially converts a list of particles into a belief distribution.
         """
         "*** YOUR CODE HERE ***"
+        # Q5
+        beliefs = DiscreteDistribution()
+        for particle in self.particles:
+            beliefs[particle] += 1
+        beliefs.normalize()
+        return beliefs
 
 
 class JointParticleFilter(ParticleFilter):
