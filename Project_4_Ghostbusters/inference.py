@@ -312,6 +312,9 @@ class ExactInference(InferenceModule):
         self.beliefs.normalize()
 
 
+
+
+
     def elapseTime(self, gameState):
         """
         Predict beliefs in response to a time step passing from the current
@@ -332,6 +335,7 @@ class ExactInference(InferenceModule):
                 newBeliefs[newPos] += self.beliefs[oldPos] * newPosDist[newPos]
 
         self.beliefs = newBeliefs
+
 
 
     def getBeliefDistribution(self):
@@ -408,14 +412,21 @@ class ParticleFilter(InferenceModule):
         """
         "*** YOUR CODE HERE ***"
         # Q7
-        oldParticles = self.particles
-        newParticles = []
 
-        for oldPar in oldParticles:
-            newPosDist = self.getPositionDistribution(gameState, oldPar)
-            newParticles.append(newPosDist.sample())
+        # Faster implementation
+        # Use a dict to store the seen particles, no need to calculate again
 
-        self.particles = newParticles
+        seenParticles = {}
+        for i in range(self.numParticles):
+            particle = self.particles[i]
+            if particle in seenParticles:
+                newPosDist = seenParticles[particle]
+            else:
+                newPosDist = self.getPositionDistribution(gameState, particle)
+                seenParticles[particle] = newPosDist
+            self.particles[i] = newPosDist.sample()
+
+
 
     def getBeliefDistribution(self):
         """
@@ -535,6 +546,8 @@ class JointParticleFilter(ParticleFilter):
         gameState.
         """
         newParticles = []
+        # Same as Q7, dict to save the seen pairs
+        seenPairs = {}
         numGhosts = self.numGhosts
         for oldParticle in self.particles:
             newParticle = list(oldParticle)  # A list of ghost positions
@@ -543,7 +556,11 @@ class JointParticleFilter(ParticleFilter):
             "*** YOUR CODE HERE ***"
             # Q10
             for i in range(numGhosts):
-                newPosDist = self.getPositionDistribution(gameState, newParticle, i, self.ghostAgents[i])
+                if (oldParticle, i) in seenPairs:
+                    newPosDist = seenPairs[(oldParticle, i)]
+                else:
+                    newPosDist = self.getPositionDistribution(gameState, newParticle, i, self.ghostAgents[i])
+                    seenPairs[(oldParticle, i)] = newPosDist
                 newParticle[i] = newPosDist.sample()
 
             """*** END YOUR CODE HERE ***"""
