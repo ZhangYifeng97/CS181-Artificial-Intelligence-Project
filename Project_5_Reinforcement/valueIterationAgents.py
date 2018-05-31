@@ -154,6 +154,7 @@ class AsynchronousValueIterationAgent(ValueIterationAgent):
         ValueIterationAgent.__init__(self, mdp, discount, iterations)
 
     def runValueIteration(self):
+        "*** YOUR CODE HERE ***"
         # Q4
         states = self.mdp.getStates()
         numStates = len(states)
@@ -186,8 +187,8 @@ class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
 
 
     def runValueIteration(self):
+        "*** YOUR CODE HERE ***"
         # Q5
-
         preds = {}
         states = [state for state in self.mdp.getStates() if not self.mdp.isTerminal(state)]
         for state in states:
