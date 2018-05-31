@@ -193,8 +193,8 @@ class ApproximateQAgent(PacmanQAgent):
         "*** YOUR CODE HERE ***"
         # Q10
         features = self.featExtractor.getFeatures(state, action)
-        diff = (reward + self.discount * self.computeValueFromQValues(nextState)) - self.getQValue(state, action)
-        for feature, i in features.items():
+        diff = reward + self.discount * self.computeValueFromQValues(nextState) - self.getQValue(state, action)
+        for feature in features:
             self.weights[feature] += self.alpha * diff * features[feature]
 
     def final(self, state):
@@ -207,4 +207,5 @@ class ApproximateQAgent(PacmanQAgent):
             # you might want to print your weights here for debugging
             "*** YOUR CODE HERE ***"
             # Q10
-            print self.getWeights()
+            # print self.getWeights()
+            pass
